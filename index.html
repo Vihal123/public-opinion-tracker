@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Opinion Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2A2F3D;
+            --secondary-color: #4A5568;
+            --accent-color: #667EEA;
+            --text-light: #F7FAFC;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: var(--text-light);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #667EEA, #8B5CF6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .intro-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .intro-section h2 {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .intro-section p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .trending {
+            margin-top: 1rem;
+        }
+
+        .trending span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 10px;
+            margin-right: 0.5rem;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .trending span:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .search-box {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        #topicInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+        }
+
+        #topicInput::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667EEA 0%, #8B5CF6 100%);
+            border: none;
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button:hover:enabled {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #results {
+            margin-top: 4rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        #results.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .chart-container, .analysis-section, .summary, .sources {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .col {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            min-height: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .col h3 {
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        li:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .userPrompt {
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+
+        /* Source Tree Styles */
+        .source-tree {
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .source-tree li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin: 0.75rem 0;
+            background: none;
+        }
+
+        .source-tree li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.8);
+        }
+
+        .source-tree li::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            height: 100%;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .source-tree li:last-child::after {
+            height: 50%;
+        }
+
+        .source-tree a {
+            color: #90cdf4;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .source-tree a:hover {
+            color: #667EEA;
+            text-decoration: underline;
+        }
+
+        .source-tree .source-name {
+            color: #F7FAFC;
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .search-box {
+                width: 90%;
+                bottom: 1rem;
+            }
+            .columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .source-tree li {
+                padding-left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Public Opinion Tracker</h1>
+
+
+
+
+
+
+        
+
+        <<!-- Add this to your existing CSS -->
+<style>
+    /* Flowchart Styles */
+    .process-flow {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        position: relative;
+        padding: 2rem 0;
+    }
+
+    .process-step {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 1.5rem;
+        width: 200px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .process-step:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    .process-step::after {
+        content: "➔";
+        position: absolute;
+        color: #667EEA;
+        font-size: 1.5rem;
+        right: -35px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .process-step:last-child::after {
+        display: none;
+    }
+
+    .step-number {
+        width: 30px;
+        height: 30px;
+        background: #667EEA;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -35px auto 1rem;
+        font-weight: 600;
+    }
+
+    .step-title {
+        color: #667EEA;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .step-description {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 768px) {
+        .process-flow {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .process-step {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .process-step::after {
+            content: "↓";
+            right: auto;
+            bottom: -35px;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    }
+</style>
+
+<!-- Update the "How does it work?" section in your HTML -->
+<div class="intro-section">
+    <h2>What is this tool?</h2>
+    <p>This AI-powered Opinion Analyzer lets you explore the public's sentiment about any topic, issue, or trend. Whether it's a social movement, political figure, tech innovation, or global crisis — just type in the topic, and we’ll analyze what people are saying using natural language processing and real-time article scanning.</p>
+    
+    <h2>How does it work?</h2>
+    <div class="process-flow">
+        <div class="process-step">
+            <div class="step-number">1</div>
+            <div class="step-title">Article Collection</div>
+            <div class="step-description">Scan recent articles & social mentions</div>
+        </div>
+        <div class="process-step">
+            <div class="step-number">2</div>
+            <div class="step-title">AI Analysis</div>
+            <div class="step-description">Sentiment scoring & key point extraction</div>
+        </div>
+        <div class="process-step">
+            <div class="step-number">3</div>
+            <div class="step-title">Visualization</div>
+            <div class="step-description">Generate charts & impact summary</div>
+        </div>
+        <div class="process-step">
+            <div class="step-number">4</div>
+            <div class="step-title">Reporting</div>
+            <div class="step-description">Compile sources & executive summary</div>
+        </div>
+    </div>
+    <div class="trending">
+        <h3 style="color: #90cdf4; margin-top: 1.5rem;">🔥 Trending Topics:</h3>
+        <div>
+            <h3 style="margin-top: 1.5rem;"></h3>
+        </div>
+        <span onclick="setTopic('trade war ')">US-China trade war </span>
+        <span onclick="setTopic('china india land dispute')">India china land dispute</span>
+        <span onclick="setTopic('India gdp future growth')">India's gdp future growth</span>
+        <span onclick="setTopic('AI in Education')">AI in Education</span>
+        <span onclick="setTopic('Crypto Regulations in india')">Crypto Regulations in india</span>
+    </div>    
+</div>
+<!-- bjsqzn -->
+
+        <div class="search-box">
+            <input type="text" id="topicInput" placeholder="Enter topic (e.g., 'AI Regulations')">
+            <button id="analyzeBtn" onclick="analyze()">Analyze</button>
+        </div>
+
+        <div id="results">
+            <p class="userPrompt" id="userPrompt"></p>
+
+            <div class="chart-container">
+                <canvas id="sentimentChart"></canvas>
+            </div>
+
+            <div class="columns">
+                <div class="col positive">
+                    <h3>👍 Positive Aspects</h3>
+                    <ul id="positivePoints"></ul>
+                </div>
+                <div class="col negative">
+                    <h3>👎 Main Concerns</h3>
+                    <ul id="negativePoints"></ul>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <h3>📊 Social Impact Analysis</h3>
+                <p id="impactAnalysis"></p>
+            </div>
+
+            <div class="summary">
+                <h3>📝 Executive Summary</h3>
+                <p id="summary"></p>
+            </div>
+
+            <div class="sources">
+                <h3>🔗 Source Tree</h3>
+                <ul class="source-tree" id="sourcesList"></ul>
+            </div>
+        </div>
+
+    <script>
+        let chart = null;
+
+        async function analyze() {
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) return;
+
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.textContent = "Analyzing...";
+
+            try {
+                const response = await fetch('http://localhost:5000/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic })
+                });
+
+                if (!response.ok) throw new Error('Server error: ' + response.status);
+
+                const data = await response.json();
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                updateUI(data, topic);
+                document.getElementById('results').classList.add('visible');
+
+            } catch (err) {
+                showError('❌ Failed to fetch data: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Analyze";
+            }
+        }
+
+        function setTopic(text) {
+            document.getElementById('topicInput').value = text;
+            analyze();
+        }
+
+        function updateUI(data, topic) {
+            if (chart) chart.destroy();
+
+            document.getElementById('userPrompt').textContent = `Public opinion on "${topic}"`;
+
+            // Update Sentiment Chart
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Positive', 'Negative', 'Neutral'],
+                    datasets: [{
+                        label: 'Sentiment Distribution',
+                        data: [data.sentiment.positive, data.sentiment.negative, data.sentiment.neutral],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(116, 123, 140, 0.8)'
+                        ],
+                        borderRadius: 10,
+                        barThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#F7FAFC', font: { family: 'Poppins' } }
+                        },
+                        x: {
+                            ticks: { color: '#F7FAFC', font: { family: 'Poppins' } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { bodyFont: { family: 'Poppins' } }
+                    }
+                }
+            });
+
+            // Update Points Lists
+            document.getElementById('positivePoints').innerHTML = data.positive_points?.map(p => `<li>${p}</li>`).join('') || '<li>No data</li>';
+            document.getElementById('negativePoints').innerHTML = data.negative_points?.map(p => `<li>${p}</li>`).join('') || '<li>No data</li>';
+
+            // Update Analysis Texts
+            document.getElementById('impactAnalysis').textContent = data.impact_analysis || 'No data available';
+            document.getElementById('summary').textContent = data.summary || 'No summary provided';
+
+            // Update Source Tree
+            const sourcesEl = document.getElementById('sourcesList');
+            if (data.sources_links?.length && data.sources_names?.length) {
+                sourcesEl.innerHTML = data.sources_links.map((link, index) => `
+                    <li>
+                        <span class="source-name">${data.sources_names[index]}</span>
+                        <a href="${link}" target="_blank">${new URL(link).hostname}</a>
+                    </li>
+                `).join('');
+            } else {
+                sourcesEl.innerHTML = '<li>No sources available</li>';
+            }
+        }
+
+        function showError(message) {
+            const errorToast = document.createElement('div');
+            errorToast.style.position = 'fixed';
+            errorToast.style.top = '20px';
+            errorToast.style.right = '20px';
+            errorToast.style.background = 'rgba(239, 68, 68, 0.9)';
+            errorToast.style.color = 'white';
+            errorToast.style.padding = '1rem 2rem';
+            errorToast.style.borderRadius = '10px';
+            errorToast.style.backdropFilter = 'blur(5px)';
+            errorToast.style.zIndex = '1000';
+            errorToast.textContent = message;
+            document.body.appendChild(errorToast);
+            setTimeout(() => errorToast.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
