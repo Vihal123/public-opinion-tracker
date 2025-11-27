@@ -1,1 +1,2 @@
 # public-opinion-tracker
+Results-driven B.Tech CSE (Data Science) student skilled in C, C++, Python, and modern web development. Experienced in building interactive dashboards, AI-powered applications, and data-driven tools. Strong understanding of data analysis, machine learning basics, and front-end development. Able to communicate in English, Telugu, and Hindi, and passionate about creating real-world solutions using technology.
